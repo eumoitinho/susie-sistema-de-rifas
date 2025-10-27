@@ -1,0 +1,359 @@
+# Regras do Projeto Susie
+
+Este arquivo contém regras e diretrizes para agentes de IA trabalhando neste repositório.
+
+## Visão Geral do Projeto
+
+O **Susie** é um sistema completo de gerenciamento de rifas online com:
+- Backend Express.js com SQLite
+- Frontend Next.js 16 com React 19
+- Integração com AbacatePay para pagamentos PIX
+- Sistema de autenticação JWT
+- Upload de arquivos
+- Geração de comprovantes
+
+## Tecnologias e Padrões
+
+### Backend
+- **Runtime**: Node.js ES Modules
+- **Framework**: Express.js
+- **Database**: SQLite3
+- **Auth**: JWT (jsonwebtoken) + bcrypt
+- **File Upload**: Multer
+- **Style**: Async/await, try/catch, error-first
+
+### Frontend
+- **Framework**: Next.js 16 (App Router)
+- **UI**: React 19, TypeScript
+- **Styling**: Tailwind CSS 4
+- **Components**: Radix UI
+- **Icons**: Lucide React
+
+## Convenções de Código
+
+### JavaScript/TypeScript
+
+1. **Nomenclatura**:
+   - Variáveis/Funções: `camelCase`
+   - Constantes: `UPPER_SNAKE_CASE`
+   - Componentes React: `PascalCase`
+   - Arquivos: `kebab-case` ou próprio formato do framework
+
+2. **Imports**:
+   - Sempre usar import de ES6 modules
+   - Ordenar: bibliotecas externas → internos → relativos
+   - Incluir extensão `.js` em imports relativos no backend
+
+3. **Estrutura de Funções**:
+   ```javascript
+   router.post('/endpoint', async (req, res) => {
+     try {
+       // Validação
+       if (!req.body.field) {
+         return res.status(400).json({ error: 'Campo obrigatório' });
+       }
+       
+       // Lógica
+       const result = await databaseOperation();
+       
+       // Response
+       res.json(result);
+     } catch (error) {
+       console.error('Context:', error);
+       res.status(500).json({ error: 'Mensagem amigável' });
+     }
+   });
+   ```
+
+4. **Tratamento de Erros**:
+   - Sempre usar try/catch em funções async
+   - Logar erros com contexto
+   - Retornar mensagens amigáveis ao usuário
+   - Códigos HTTP apropriados
+
+5. **SQL**:
+   - SEMPRE usar prepared statements
+   - Nunca concatenar strings em queries
+   - Validar dados antes de inserir
+
+### React/Next.js
+
+1. **Componentes**:
+   - Funções (não classes)
+   - TypeScript para props
+   - Nomes descritivos
+
+2. **Hooks**:
+   - useState para estado local
+   - useEffect para DFS
+   - useRouter para navegação
+
+3. **Estrutura de Componente**:
+   ```typescript
+   'use client'; // Apenas se necessário
+   
+   import { useState } from 'react';
+   
+   interface Props {
+     // Props
+   }
+   
+   export default function ComponentName({ }: Props) {
+     const [state, setState] = useState();
+     
+     const handleAction = () => {
+       // ...
+     };
+     
+     return (
+       // JSX
+     );
+   }
+   ```
+
+## Regras de Banco de Dados
+
+### Tabelas
+
+1. **users**: Armazena informações de usuários
+2. **rifas**: Armazena rifas criadas
+3. **bilhetes**: Armazena bilhetes vendidos
+4. **fotos**: Armazena URLs de fotos das rifas
+
+### Constraints
+
+- Sempre usar foreign keys
+- Índices em campos de busca frequente
+- UNIQUE constraints onde apropriado
+- ON DELETE CASCADE em fotos
+
+### Queries
+
+- Sempre usar `?` placeholders
+- Usar `get()` para single row
+- Usar `all()` para múltiplas rows
+- Usar `run()` para INSERT/UPDATE/DELETE
+
+## Segurança
+
+### Autenticação
+
+1. **JWT**:
+   - Expiração: 24h
+   - Header: `Authorization: Bearer <token>`
+   - Middleware: `authenticateToken`
+
+2. **Senhas**:
+   - Hash com bcrypt (rounds: 10)
+   - Nunca armazenar senha plaintext
+   - Validação no login
+
+3. **Validação de Dados**:
+   - Validar todos os inputs
+   - Sanitizar dados de usuário
+   - Validação de tipos de arquivo
+   - Limites de tamanho
+
+### SQL Injection
+
+- **NUNCA** concatenar strings em SQL
+- **SEMPRE** usar prepared statements
+- Validação de tipos antes de queries
+
+## API
+
+### Estrutura de Resposta
+
+**Sucesso (200/201)**:
+```json
+{
+  "message": "Operação realizada com sucesso",
+  "data": { /* ... */ }
+}
+```
+
+**Erro (400/401/403/404/500)**:
+```json
+{
+  "error": "Mensagem de erro clara"
+}
+```
+
+### Códigos HTTP
+
+- `200` - OK (GET, PUT)
+- `201` - Created (POST)
+- `400` - Bad Request (validação)
+- `401` - Unauthorized (sem token)
+- `403` - Forbidden (sem permissão)
+- `404` - Not Found
+- `500` - Internal Server Error
+
+### Rotas Públicas vs Protegidas
+
+- **Públicas**: `/api/auth/*`, `/api/rifas/:id` (visualização), `/api/pagamento/bilhete/:codigo`
+- **Protegidas**: Todas as outras requerem `Authorization` header
+
+## Upload de Arquivos
+
+### Configuração
+
+- **Diretório**: `backend/uploads`
+- **Limite**: 5MB por arquivo
+- **Formatos**: jpeg, jpg, png, gif, webp
+- **Máximo**: 10 arquivos por requisição
+
+### Processamento
+
+- Usar Multer para upload
+- Gerar nome único para arquivo
+- Salvar URL no banco
+- Servir arquivos estaticamente
+
+## Pagamentos
+
+### Fluxo PIX
+
+1. Receber dados do comprador
+2. Verificar disponibilidade do número
+3. Criar cliente no AbacatePay
+4. Criar cobrança PIX
+5. Gerar QR Code
+6. Salvar bilhete com status PENDING
+7. Webhook atualiza status para PAID
+
+### Webhook
+
+- Validar assinatura
+- Processar apenas eventos PAID
+- Atualizar status no banco
+- Logar todas as operações
+
+## Comprovantes
+
+### Formato
+
+- HTML renderizável
+- Estilo inline (para email/print)
+- Responsivo
+- Botão de impressão
+
+### Dados Incluídos
+
+- Número do bilhete
+- Nome do comprador
+- CPF
+- WhatsApp
+- Data da compra
+- Status de pagamento
+- Código de verificação
+- Informações da rifa
+
+## Desenvolvimento
+
+### Setup
+
+```bash
+# Instalar dependências
+npm install
+cd backend && npm install
+cd ../frontend && npm install
+
+# Variáveis de ambiente
+# Criar .env no backend
+```
+
+### Execução
+
+```bash
+# Desenvolvimento completo
+npm run dev
+
+# Backend apenas
+npm run dev:backend
+
+# Frontend apenas
+npm run dev:frontend
+```
+
+## Testes
+
+### Checklist Antes de Commit
+
+- [ ] Código compila sem erros
+- [ ] Validações implementadas
+- [ ] Erros tratados adequadamente
+- [ ] SQL usa prepared statements
+- [ ] Imports corretos
+- [ ] Nomenclatura consistente
+- [ ] Comentários em código complexo
+
+## Documentação
+
+### Comentários
+
+- Comentar lógica complexa
+- Explicar "por quê", não "o quê"
+- Português nos comentários
+
+### Commit Messages
+
+Seguir padrão:
+```
+tipo(escopo): descrição curta
+
+Descrição detalhada se necessário
+```
+
+Tipos: feat, fix, docs, style, refactor, test, chore
+
+### README
+
+- Manter atualizado
+- Exemplos funcionais
+- Comandos corretos
+- Links funcionando
+
+## Anti-Padrões
+
+### NÃO Fazer
+
+- ❌ Concatenar strings em SQL
+- ❌ Retornar senhas ou tokens em responses
+- ❌ Usar callbacks em vez de async/await
+- ❌ Commit de senhas ou tokens no código
+- ❌ Arquivos não rastreados no .gitignore
+- ❌ Console.log em produção
+- ❌ Tratar todos os erros genericamente
+
+### Fazer
+
+- ✅ Preparar statements SQL
+- ✅ Hash de senhas
+- ✅ Async/await
+- ✅ Variáveis de ambiente
+- ✅ Gitignore apropriado
+- ✅ Logging estruturado
+- ✅ Mensagens de erro específicas
+
+## Palavras Finais
+
+Este projeto prioriza:
+- **Segurança**: Validação, sanitização, prepared statements
+- **Performance**: Queries otimizadas, código eficiente
+- **Manutenibilidade**: Código limpo, documentado, modular
+- **UX**: Mensagens claras, feedback imediato
+- **Escalabilidade**: Arquitetura modular e extensível
+
+Ao fazer alterações, sempre considerar:
+- Impacto na segurança
+- Performance
+- Compatibilidade
+- Documentação
+- Testes
+
+---
+
+**Última atualização**: 2024-01-15
+**Versão**: 1.0.0
+
