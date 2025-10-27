@@ -1,0 +1,11 @@
+node_modules/
+*.db
+*.sqlite
+.env
+*.pdf
+uploads/
+.next/
+dist/
+build/
+
+
