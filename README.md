@@ -581,3 +581,4 @@ Veja [CHANGELOG.md](CHANGELOG.md) para histórico completo de mudanças.
 **Desenvolvido por @eumoitinho**
 
 Se este projeto foi útil para você, considere dar uma ⭐ no GitHub!
+  
