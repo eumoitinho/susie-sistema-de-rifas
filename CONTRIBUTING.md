@@ -372,3 +372,4 @@ Obrigado por contribuir com o Susie! Cada contribuição, grande ou pequena, é 
 
 **Vamos tornar o Susie ainda melhor juntos! 🚀**
 
+

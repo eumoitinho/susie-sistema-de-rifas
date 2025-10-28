@@ -131,3 +131,4 @@ e este projeto adere a [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 **Nota**: Este é o release inicial do projeto. Todas as funcionalidades listadas foram implementadas na versão 1.0.0.
 
+

@@ -70,3 +70,4 @@ Veja [README.md](../README.md#-documentação-da-api) para documentação comple
 
 SQLite é usado por padrão. O arquivo `database.sqlite` será criado automaticamente na primeira execução.
 
+
