@@ -10,7 +10,7 @@ type RouteParams = {
 };
 
 type RouteContext = {
-  params: RouteParams | Promise<RouteParams>;
+  params: Promise<RouteParams>;
 };
 
 const BACKEND_BASE_URL = process.env.BACKEND_API_URL ?? 'http://localhost:4000';
@@ -18,10 +18,7 @@ const BACKEND_API_PREFIX = process.env.BACKEND_API_PREFIX ?? '/api';
 const BACKEND_API_URL = `${BACKEND_BASE_URL.replace(/\/$/, '')}${BACKEND_API_PREFIX}`;
 
 async function resolveParams(context: RouteContext): Promise<RouteParams> {
-  const { params } = context;
-  if (params instanceof Promise) {
-    return params;
-  }
+  const params = await context.params;
   return params ?? {};
 }
 

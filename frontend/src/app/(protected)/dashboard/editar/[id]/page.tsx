@@ -8,13 +8,10 @@ type RouteParams = {
 };
 
 type EditRifaPageProps = {
-  params: RouteParams | Promise<RouteParams>;
+  params: Promise<RouteParams>;
 };
 
-async function resolveParams(params: EditRifaPageProps['params']): Promise<RouteParams> {
-  if (params instanceof Promise) {
-    return params;
-  }
+async function resolveParams(params: Promise<RouteParams>): Promise<RouteParams> {
   return params;
 }
 

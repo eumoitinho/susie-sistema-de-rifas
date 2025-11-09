@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { backendFetch } from '@/lib/server/backend';
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export async function GET(_: NextRequest, { params }: RouteContext) {
-  const { id } = params;
+  const { id } = await params;
   const { ok, status, body } = await backendFetch(`/bilhetes/rifa/${id}`);
 
   if (!ok) {

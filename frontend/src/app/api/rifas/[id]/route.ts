@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { backendFetch } from '@/lib/server/backend';
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export async function GET(_: NextRequest, { params }: RouteContext) {
-  const { id } = params;
+  const { id } = await params;
   const { ok, status, body } = await backendFetch(`/rifas/${id}`, {
     auth: false,
   });
@@ -24,7 +24,7 @@ export async function GET(_: NextRequest, { params }: RouteContext) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteContext) {
-  const { id } = params;
+  const { id } = await params;
   const payload = await request.json().catch(() => null);
 
   if (!payload) {
@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(_: NextRequest, { params }: RouteContext) {
-  const { id } = params;
+  const { id } = await params;
 
   const { ok, status, body } = await backendFetch(`/rifas/${id}`, {
     method: 'DELETE',

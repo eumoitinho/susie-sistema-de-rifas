@@ -6,15 +6,11 @@ type RouteParams = {
 };
 
 type RouteContext = {
-  params: RouteParams | Promise<RouteParams>;
+  params: Promise<RouteParams>;
 };
 
 async function resolveParams(context: RouteContext): Promise<RouteParams> {
-  const params = context.params;
-  if (params instanceof Promise) {
-    return params;
-  }
-  return params;
+  return context.params;
 }
 
 export async function GET(_request: NextRequest, context: RouteContext) {

@@ -7,15 +7,16 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import { PurchaseWidget } from '@/components/public/purchase-widget';
 
 type RifaPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export const revalidate = 0;
 
 export async function generateMetadata({ params }: RifaPageProps) {
-  const { ok, body } = await backendFetch<Rifa>(`/rifas/${params.id}`, { auth: false });
+  const { id } = await params;
+  const { ok, body } = await backendFetch<Rifa>(`/rifas/${id}`, { auth: false });
   if (!ok || !body) {
     return {
       title: 'Rifa não encontrada',
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: RifaPageProps) {
 }
 
 export default async function RifaPage({ params }: RifaPageProps) {
-  const { id } = params;
+  const { id } = await params;
 
   const { ok, body } = await backendFetch<Rifa>(`/rifas/${id}`, { auth: false });
 

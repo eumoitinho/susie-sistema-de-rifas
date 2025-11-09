@@ -19,21 +19,22 @@ type BilheteResponse = {
 };
 
 type BilhetePageProps = {
-  params: {
+  params: Promise<{
     codigo: string;
-  };
+  }>;
 };
 
 export const revalidate = 0;
 
 export async function generateMetadata({ params }: BilhetePageProps) {
+  const { codigo } = await params;
   return {
-    title: `Bilhete ${params.codigo} | Susie Rifas`,
+    title: `Bilhete ${codigo} | Susie Rifas`,
   };
 }
 
 export default async function BilhetePage({ params }: BilhetePageProps) {
-  const { codigo } = params;
+  const { codigo } = await params;
 
   const { ok, body } = await backendFetch<BilheteResponse>(`/pagamento/bilhete/${codigo}`, {
     auth: false,
