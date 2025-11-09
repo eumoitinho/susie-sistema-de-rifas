@@ -6,13 +6,18 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && node --watch server.js",
     "dev:frontend": "cd frontend && npx next dev -p 3006",
-    "build": "cd frontend && next build",
-    "start": "cd frontend && next start"
+    "build": "cd backend && npm install",
+    "start": "cd backend && node server.js",
+    "railway:build": "cd backend && npm install",
+    "railway:start": "cd backend && node server.js"
   },
   "keywords": ["rifas", "raffles", "nextjs", "express"],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
