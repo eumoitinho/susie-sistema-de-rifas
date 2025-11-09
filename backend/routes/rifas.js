@@ -4,6 +4,53 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Rotas públicas
+router.get('/public/list', async (_req, res) => {
+  try {
+    const rifas = await all(`
+      SELECT
+        r.*,
+        (
+          SELECT COUNT(*)
+          FROM bilhetes b
+          WHERE b.rifa_id = r.id
+        ) AS cotas_vendidas
+      FROM rifas r
+      ORDER BY r.created_at DESC
+    `);
+
+    const fotos = await all('SELECT rifa_id, url FROM fotos ORDER BY ordem, id');
+    const fotoMap = new Map();
+    fotos.forEach((foto) => {
+      if (!fotoMap.has(foto.rifa_id)) {
+        fotoMap.set(foto.rifa_id, foto.url);
+      }
+    });
+
+    const response = rifas.map((rifa) => {
+      const vendidos = Number(rifa.cotas_vendidas || 0);
+      const total = Number(rifa.numero_max || 0);
+      return {
+        id: rifa.id,
+        titulo: rifa.titulo,
+        descricao: rifa.descricao,
+        foto_capa: fotoMap.get(rifa.id) || rifa.foto_url || null,
+        valor_bilhete: rifa.valor_bilhete,
+        data_sorteio: rifa.data_sorteio,
+        numero_max: total,
+        cotas_vendidas: vendidos,
+        cotas_disponiveis: Math.max(total - vendidos, 0),
+        created_at: rifa.created_at,
+      };
+    });
+
+    res.json(response);
+  } catch (error) {
+    console.error('Get public rifas error:', error);
+    res.status(500).json({ error: 'Erro ao listar rifas públicas' });
+  }
+});
+
 // Middleware de autenticação apenas para algumas rotas
 const authMiddleware = authenticateToken;
 

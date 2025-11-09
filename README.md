@@ -14,6 +14,7 @@
 - [Tecnologias](#-tecnologias)
 - [Instalação](#-instalação)
 - [Uso](#-uso)
+- [Deploy](#-deploy-no-railway)
 - [API Documentation](#-documentação-da-api)
 - [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Configuração](#-configuração)
@@ -144,6 +145,17 @@ npm run build
 # Iniciar servidor
 npm start
 ```
+
+### Deploy no Railway 🚂
+
+Para fazer deploy no Railway, consulte o guia completo em [DEPLOY_RAILWAY.md](DEPLOY_RAILWAY.md).
+
+**Resumo rápido:**
+1. Conecte seu repositório GitHub ao Railway
+2. Configure as variáveis de ambiente (JWT_SECRET, ABACATEPAY_API_KEY, etc)
+3. O Railway fará o deploy automaticamente
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new)
 
 ### Uso Rápido
 
