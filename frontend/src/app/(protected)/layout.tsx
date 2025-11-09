@@ -30,7 +30,7 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
           </span>
           <div>
             <h1 className="text-base font-bold uppercase tracking-wide text-slate-100">
-              Gordinho Rifas
+              Rifato Rifas
             </h1>
             <p className="text-xs text-slate-400">Painel administrativo</p>
           </div>
