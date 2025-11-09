@@ -64,7 +64,18 @@ export default async function RifaDetailsPage({ params }: RifaDetailsPageProps) 
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={`/rifas/${id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-500 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Ver página pública
+          </a>
           <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
             Valor da cota: {formatCurrency(Number(rifaResponse.body.valor_bilhete ?? 0))}
           </span>

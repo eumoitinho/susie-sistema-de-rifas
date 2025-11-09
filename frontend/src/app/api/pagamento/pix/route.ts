@@ -14,12 +14,29 @@ export async function POST(request: NextRequest) {
     const payload = (await request.json()) as Partial<RequestPayload>;
     const { rifaId, numero, nome, cpf, whatsapp } = payload;
 
-    if (!rifaId || !numero || !nome || !cpf || !whatsapp) {
+    // Validar e converter tipos
+    const rifaIdNum = Number(rifaId);
+    const numeroNum = Number(numero);
+
+    if (!rifaIdNum || !numeroNum || !nome || !cpf || !whatsapp) {
       return NextResponse.json(
         { error: 'Todos os campos são obrigatórios.' },
         { status: 400 }
       );
     }
+
+    // Limpar CPF e WhatsApp (remover caracteres não numéricos)
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    const whatsappLimpo = whatsapp.replace(/\D/g, '');
+
+    if (cpfLimpo.length !== 11) {
+      return NextResponse.json(
+        { error: 'CPF deve conter 11 dígitos.' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Iniciando pagamento PIX:', { rifa_id: rifaIdNum, numero: numeroNum, nome, cpf: cpfLimpo, whatsapp: whatsappLimpo });
 
     const response = await backendFetch(`/pagamento/pix`, {
       method: 'POST',
@@ -27,19 +44,27 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        rifa_id: rifaId,
-        numero,
-        nome_comprador: nome,
-        cpf,
-        whatsapp,
+        rifa_id: rifaIdNum,
+        numero: numeroNum,
+        nome_comprador: nome.trim(),
+        cpf: cpfLimpo,
+        whatsapp: whatsappLimpo,
       }),
       auth: false,
     });
 
     if (!response.ok) {
+      console.error('Erro do backend:', response.status, response.body);
       return NextResponse.json(
-        response.body ?? { error: 'Erro ao iniciar pagamento' },
+        response.body ?? { error: `Erro ao iniciar pagamento (${response.status})` },
         { status: response.status }
+      );
+    }
+
+    if (!response.body) {
+      return NextResponse.json(
+        { error: 'Resposta inválida do servidor' },
+        { status: 500 }
       );
     }
 
@@ -47,7 +72,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Pagamento PIX error:', error);
     return NextResponse.json(
-      { error: 'Erro inesperado ao iniciar o pagamento.' },
+      { error: error instanceof Error ? error.message : 'Erro inesperado ao iniciar o pagamento.' },
       { status: 500 }
     );
   }

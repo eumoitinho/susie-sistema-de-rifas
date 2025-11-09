@@ -50,33 +50,41 @@ export default async function RifaPage({ params }: RifaPageProps) {
   const shareLink = `${appBaseUrl}/rifas/${id}`;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto w-full max-w-6xl px-6 py-12">
-        <Link href="/" className="text-sm text-slate-400 transition hover:text-emerald-300">
-          ← Voltar para rifas
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <Link 
+          href="/rifas" 
+          className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-emerald-300"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Voltar para rifas
         </Link>
 
-        <div className="mt-8 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
-          <div className="space-y-8">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-              <h1 className="text-3xl font-semibold text-white">{body.titulo}</h1>
-              <p className="mt-2 text-sm text-slate-300">{body.descricao}</p>
-              <div className="mt-6 grid grid-cols-3 gap-4 text-sm text-slate-300">
-                <div>
-                  <p className="text-xs uppercase text-slate-400">Data do sorteio</p>
-                  <p className="text-lg font-semibold text-white">
+        <div className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm sm:p-8">
+              <h1 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">{body.titulo}</h1>
+              {body.descricao && (
+                <p className="mt-3 text-sm leading-6 text-slate-300 sm:text-base">{body.descricao}</p>
+              )}
+              <div className="mt-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Data do sorteio</p>
+                  <p className="mt-2 text-lg font-bold text-white sm:text-xl">
                     {formatDate(body.data_sorteio)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase text-slate-400">Valor por cota</p>
-                  <p className="text-lg font-semibold text-emerald-400">
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-400">Valor por cota</p>
+                  <p className="mt-2 text-lg font-bold text-emerald-400 sm:text-xl">
                     {formatCurrency(body.valor_bilhete)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase text-slate-400">Disponíveis</p>
-                  <p className="text-lg font-semibold text-white">
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Disponíveis</p>
+                  <p className="mt-2 text-lg font-bold text-white sm:text-xl">
                     {disponiveis.length} de {body.numero_max}
                   </p>
                 </div>
@@ -84,45 +92,48 @@ export default async function RifaPage({ params }: RifaPageProps) {
             </div>
 
             {fotos.length > 0 && (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {fotos.map((foto, index) => (
-                  <div key={`${foto}-${index}`} className="relative h-64 overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
+                  <div 
+                    key={`${foto}-${index}`} 
+                    className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-slate-900 sm:aspect-video"
+                  >
                     <Image
                       src={foto}
                       alt={`${body.titulo} ${index + 1}`}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 50vw"
+                      sizes="(max-width: 640px) 100vw, 50vw"
                     />
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <h2 className="text-xl font-semibold text-white">Sobre o prêmio</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-300">
-                Cadastre aqui informações adicionais do prêmio para aumentar a confiança dos participantes. Detalhe fotos,
-                acessórios inclusos, condições de entrega e tudo que mostre o valor do sorteio.
-              </p>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm sm:p-8">
+              <h2 className="text-xl font-semibold text-white sm:text-2xl">Informações do sorteio</h2>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  ✅ Total de cotas: {body.numero_max}
+                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total de cotas</p>
+                  <p className="mt-1 text-base font-bold text-white">{body.numero_max}</p>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  🎟️ Cotas vendidas: {vendidos}
+                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Cotas vendidas</p>
+                  <p className="mt-1 text-base font-bold text-emerald-400">{vendidos}</p>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  📅 Criado em: {formatDate(body.created_at)}
+                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Criado em</p>
+                  <p className="mt-1 text-sm text-slate-300">{formatDate(body.created_at)}</p>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  🔗 Compartilhe: <span className="break-all text-emerald-300">{shareLink}</span>
+                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Compartilhar</p>
+                  <p className="mt-1 break-all text-xs text-emerald-300 sm:text-sm">{shareLink}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-6">
             <PurchaseWidget
               rifaId={body.id}
               titulo={body.titulo}
@@ -130,13 +141,25 @@ export default async function RifaPage({ params }: RifaPageProps) {
               numerosDisponiveis={disponiveis}
             />
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-slate-200">
-              <h3 className="text-base font-semibold text-white">Como funciona o pagamento?</h3>
-              <ol className="mt-3 list-decimal space-y-2 pl-5 text-slate-300">
-                <li>Selecione um número disponível e preencha com seus dados.</li>
-                <li>Geramos um QR Code PIX único no valor da cota.</li>
-                <li>Após o pagamento, o status do seu bilhete atualiza automaticamente.</li>
-                <li>Guarde o código de visualização para consultar o comprovante quando quiser.</li>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+              <h3 className="text-base font-semibold text-white sm:text-lg">Como funciona o pagamento?</h3>
+              <ol className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+                <li className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">1</span>
+                  <span>Selecione um número disponível e preencha com seus dados.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">2</span>
+                  <span>Geramos um QR Code PIX único no valor da cota.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">3</span>
+                  <span>Após o pagamento, o status do seu bilhete atualiza automaticamente.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">4</span>
+                  <span>Guarde o código de visualização para consultar o comprovante quando quiser.</span>
+                </li>
               </ol>
             </div>
           </div>

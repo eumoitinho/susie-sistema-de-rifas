@@ -64,23 +64,28 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rifaId,
-          numero: selectedNumber,
+          rifaId: Number(rifaId),
+          numero: Number(selectedNumber),
           nome,
-          cpf,
-          whatsapp,
+          cpf: cpf.replace(/\D/g, ''),
+          whatsapp: whatsapp.replace(/\D/g, ''),
         }),
       });
 
-      const payload = await response.json();
-
       if (!response.ok) {
-        throw new Error(payload?.error ?? 'Erro ao iniciar pagamento');
+        const payload = await response.json().catch(() => ({ error: 'Erro ao processar resposta do servidor' }));
+        throw new Error(payload?.error ?? `Erro ${response.status}: ${response.statusText}`);
+      }
+
+      const payload = await response.json();
+      
+      if (!payload || !payload.codigo_visualizacao) {
+        throw new Error('Resposta inválida do servidor');
       }
 
       setPayment(payload as PaymentResponse);
     } catch (submitError) {
-      console.error(submitError);
+      console.error('Erro ao processar pagamento:', submitError);
       setError(submitError instanceof Error ? submitError.message : 'Erro inesperado. Tente novamente.');
     } finally {
       setIsSubmitting(false);
