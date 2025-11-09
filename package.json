@@ -6,10 +6,7 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && node --watch server.js",
     "dev:frontend": "cd frontend && npx next dev -p",
-    "build": "cd backend && npm install",
-    "start": "cd backend && node server.js",
-    "railway:build": "cd backend && npm install",
-    "railway:start": "cd backend && node server.js"
+    "build": "cd backend && npm install"
   },
   "keywords": ["rifas", "raffles", "nextjs", "express"],
   "author": "",
