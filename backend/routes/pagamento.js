@@ -443,5 +443,244 @@ router.get('/comprovante/:codigo', async (req, res) => {
   }
 });
 
+// Configuração Mercado Pago
+const MERCADOPAGO_ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN;
+const MERCADOPAGO_PUBLIC_KEY = process.env.MERCADOPAGO_PUBLIC_KEY;
+
+// Criar preferência de pagamento Mercado Pago (checkout transparente)
+router.post('/mercadopago/preference', async (req, res) => {
+  try {
+    if (!MERCADOPAGO_ACCESS_TOKEN) {
+      return res.status(500).json({ error: 'Mercado Pago não configurado' });
+    }
+
+    const { rifa_id, numero, nome_comprador, cpf, whatsapp } = req.body;
+
+    if (!rifa_id || !numero || !nome_comprador || !cpf || !whatsapp) {
+      return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+    }
+
+    // Buscar rifa
+    const rifa = await get('SELECT * FROM rifas WHERE id = ?', [rifa_id]);
+    if (!rifa) {
+      return res.status(404).json({ error: 'Rifa não encontrada' });
+    }
+
+    // Verificar se número já está reservado
+    const bilheteExistente = await get('SELECT * FROM bilhetes WHERE rifa_id = ? AND numero = ?', [rifa_id, numero]);
+    if (bilheteExistente) {
+      return res.status(400).json({ error: 'Número já reservado' });
+    }
+
+    // Gerar código de visualização
+    const codigoVisualizacao = gerarCodigo();
+
+    // Criar preferência no Mercado Pago
+    const { MercadoPago } = await import('mercadopago');
+    const mercadopago = new MercadoPago(MERCADOPAGO_ACCESS_TOKEN, {
+      options: { timeout: 5000 }
+    });
+
+    const preference = {
+      items: [
+        {
+          title: `Bilhete ${numero} - ${rifa.titulo}`,
+          quantity: 1,
+          unit_price: Number(rifa.valor_bilhete),
+          currency_id: 'BRL',
+        },
+      ],
+      payer: {
+        name: nome_comprador,
+        email: `${cpf}@bilhete.rifa`,
+        identification: {
+          type: 'CPF',
+          number: cpf.replace(/\D/g, ''),
+        },
+        phone: {
+          area_code: whatsapp.substring(0, 2),
+          number: whatsapp.substring(2),
+        },
+      },
+      back_urls: {
+        success: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/bilhetes/${codigoVisualizacao}`,
+        failure: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/rifas/${rifa_id}`,
+        pending: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/bilhetes/${codigoVisualizacao}`,
+      },
+      auto_return: 'approved',
+      external_reference: `rifa-${rifa_id}-${numero}-${codigoVisualizacao}`,
+      notification_url: `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/pagamento/mercadopago/webhook`,
+      statement_descriptor: 'RIFA SUSIE',
+    };
+
+    const response = await mercadopago.preferences.create(preference);
+
+    // Salvar bilhete com status PENDING
+    await run(
+      'INSERT INTO bilhetes (rifa_id, numero, nome_comprador, cpf, whatsapp, codigo_visualizacao, status_pagamento, pix_id, valor_pago) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [rifa_id, numero, nome_comprador, cpf, whatsapp, codigoVisualizacao, 'PENDING', response.body.id, rifa.valor_bilhete]
+    );
+
+    res.json({
+      preference_id: response.body.id,
+      init_point: response.body.init_point,
+      public_key: MERCADOPAGO_PUBLIC_KEY,
+      codigo_visualizacao: codigoVisualizacao,
+      amount: rifa.valor_bilhete,
+    });
+  } catch (error) {
+    console.error('Mercado Pago preference error:', error);
+    res.status(500).json({ error: 'Erro ao criar preferência de pagamento' });
+  }
+});
+
+// Processar pagamento com cartão (checkout transparente)
+router.post('/mercadopago/payment', async (req, res) => {
+  try {
+    if (!MERCADOPAGO_ACCESS_TOKEN) {
+      return res.status(500).json({ error: 'Mercado Pago não configurado' });
+    }
+
+    const { token, rifa_id, numero, nome_comprador, cpf, whatsapp, installments, payment_method_id } = req.body;
+
+    if (!token || !rifa_id || !numero || !nome_comprador || !cpf || !whatsapp) {
+      return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+    }
+
+    // Buscar rifa
+    const rifa = await get('SELECT * FROM rifas WHERE id = ?', [rifa_id]);
+    if (!rifa) {
+      return res.status(404).json({ error: 'Rifa não encontrada' });
+    }
+
+    // Verificar se número já está reservado
+    const bilheteExistente = await get('SELECT * FROM bilhetes WHERE rifa_id = ? AND numero = ?', [rifa_id, numero]);
+    if (bilheteExistente) {
+      return res.status(400).json({ error: 'Número já reservado' });
+    }
+
+    // Gerar código de visualização
+    const codigoVisualizacao = gerarCodigo();
+
+    // Criar pagamento no Mercado Pago
+    const { MercadoPago } = await import('mercadopago');
+    const mercadopago = new MercadoPago(MERCADOPAGO_ACCESS_TOKEN, {
+      options: { timeout: 5000 }
+    });
+
+    const paymentData = {
+      transaction_amount: Number(rifa.valor_bilhete),
+      token: token,
+      description: `Bilhete ${numero} - ${rifa.titulo}`,
+      installments: installments || 1,
+      payment_method_id: payment_method_id,
+      payer: {
+        email: `${cpf}@bilhete.rifa`,
+        identification: {
+          type: 'CPF',
+          number: cpf.replace(/\D/g, ''),
+        },
+      },
+      external_reference: `rifa-${rifa_id}-${numero}-${codigoVisualizacao}`,
+      notification_url: `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/pagamento/mercadopago/webhook`,
+    };
+
+    const payment = await mercadopago.payment.create(paymentData);
+
+    // Salvar bilhete
+    const statusPagamento = payment.body.status === 'approved' ? 'PAID' : 'PENDING';
+    await run(
+      'INSERT INTO bilhetes (rifa_id, numero, nome_comprador, cpf, whatsapp, codigo_visualizacao, status_pagamento, pix_id, valor_pago) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [rifa_id, numero, nome_comprador, cpf, whatsapp, codigoVisualizacao, statusPagamento, payment.body.id.toString(), rifa.valor_bilhete]
+    );
+
+    res.json({
+      id: payment.body.id,
+      status: payment.body.status,
+      status_detail: payment.body.status_detail,
+      codigo_visualizacao: codigoVisualizacao,
+    });
+  } catch (error) {
+    console.error('Mercado Pago payment error:', error);
+    res.status(500).json({ 
+      error: error.response?.body?.message || 'Erro ao processar pagamento',
+      details: error.response?.body?.cause || []
+    });
+  }
+});
+
+// Retornar chave pública do Mercado Pago
+router.get('/mercadopago/public-key', async (_req, res) => {
+  res.json({ public_key: MERCADOPAGO_PUBLIC_KEY || null });
+});
+
+// Criar token do cartão
+router.post('/mercadopago/card-token', async (req, res) => {
+  try {
+    if (!MERCADOPAGO_ACCESS_TOKEN) {
+      return res.status(500).json({ error: 'Mercado Pago não configurado' });
+    }
+
+    const { card_number, cardholder, card_expiration_month, card_expiration_year, security_code } = req.body;
+
+    if (!card_number || !cardholder || !card_expiration_month || !card_expiration_year || !security_code) {
+      return res.status(400).json({ error: 'Todos os dados do cartão são obrigatórios' });
+    }
+
+    // Criar token usando a API do Mercado Pago
+    const tokenResponse = await fetch('https://api.mercadopago.com/v1/card_tokens', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MERCADOPAGO_ACCESS_TOKEN}`,
+      },
+      body: JSON.stringify({
+        card_number,
+        cardholder,
+        card_expiration_month,
+        card_expiration_year,
+        security_code,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const error = await tokenResponse.json().catch(() => ({ message: 'Erro ao processar cartão' }));
+      return res.status(tokenResponse.status).json({ error: error.message || 'Erro ao processar cartão' });
+    }
+
+    const tokenData = await tokenResponse.json();
+    res.json(tokenData);
+  } catch (error) {
+    console.error('Card token error:', error);
+    res.status(500).json({ error: 'Erro ao criar token do cartão' });
+  }
+});
+
+// Webhook Mercado Pago
+router.post('/mercadopago/webhook', async (req, res) => {
+  try {
+    const { type, data } = req.body;
+
+    if (type === 'payment') {
+      const { MercadoPago } = await import('mercadopago');
+      const mercadopago = new MercadoPago(MERCADOPAGO_ACCESS_TOKEN, {
+        options: { timeout: 5000 }
+      });
+
+      const payment = await mercadopago.payment.findById(data.id);
+
+      if (payment.body.status === 'approved') {
+        await run('UPDATE bilhetes SET status_pagamento = ? WHERE pix_id = ?', ['PAID', data.id.toString()]);
+        console.log(`Pagamento Mercado Pago aprovado: ${data.id}`);
+      }
+    }
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Mercado Pago webhook error:', error);
+    res.status(500).send('Error');
+  }
+});
+
 export default router;
 

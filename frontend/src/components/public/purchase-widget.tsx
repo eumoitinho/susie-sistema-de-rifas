@@ -1,8 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { formatCurrency, formatDateTime } from '@/lib/format';
+
+declare global {
+  interface Window {
+    MercadoPago: any;
+  }
+}
 
 type PurchaseWidgetProps = {
   rifaId: number;
@@ -19,14 +25,23 @@ type PaymentResponse = {
   expira_em: string;
 };
 
+type PaymentMethod = 'pix' | 'card';
+
 export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponiveis }: PurchaseWidgetProps) {
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [installments, setInstallments] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payment, setPayment] = useState<PaymentResponse | null>(null);
+  const [mpPublicKey, setMpPublicKey] = useState<string | null>(null);
 
   const sortedNumbers = useMemo(() => {
     return [...numerosDisponiveis].sort((a, b) => a - b);
@@ -38,12 +53,37 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
 
   const resetState = () => {
     setSelectedNumber(null);
+    setPaymentMethod('pix');
     setNome('');
     setCpf('');
     setWhatsapp('');
+    setCardNumber('');
+    setCardName('');
+    setCardExpiry('');
+    setCardCvv('');
+    setInstallments(1);
     setError(null);
     setPayment(null);
   };
+
+  // Carregar chave pública do Mercado Pago
+  useEffect(() => {
+    fetch('/api/pagamento/mercadopago/public-key')
+      .then(res => res.json())
+      .then(data => {
+        if (data.public_key) {
+          setMpPublicKey(data.public_key);
+          // Carregar script do Mercado Pago
+          if (typeof window !== 'undefined' && !window.MercadoPago) {
+            const script = document.createElement('script');
+            script.src = 'https://sdk.mercadopago.com/js/v2';
+            script.async = true;
+            document.body.appendChild(script);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -56,34 +96,81 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
       return;
     }
 
+    if (paymentMethod === 'card') {
+      if (!cardNumber || !cardName || !cardExpiry || !cardCvv) {
+        setError('Preencha todos os dados do cartão.');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/pagamento/pix', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rifaId: Number(rifaId),
-          numero: Number(selectedNumber),
-          nome,
-          cpf: cpf.replace(/\D/g, ''),
-          whatsapp: whatsapp.replace(/\D/g, ''),
-        }),
-      });
+      if (paymentMethod === 'pix') {
+        const response = await fetch('/api/pagamento/pix', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rifaId: Number(rifaId),
+            numero: Number(selectedNumber),
+            nome,
+            cpf: cpf.replace(/\D/g, ''),
+            whatsapp: whatsapp.replace(/\D/g, ''),
+          }),
+        });
 
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({ error: 'Erro ao processar resposta do servidor' }));
-        throw new Error(payload?.error ?? `Erro ${response.status}: ${response.statusText}`);
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ error: 'Erro ao processar resposta do servidor' }));
+          throw new Error(payload?.error ?? `Erro ${response.status}: ${response.statusText}`);
+        }
+
+        const payload = await response.json();
+        
+        if (!payload || !payload.codigo_visualizacao) {
+          throw new Error('Resposta inválida do servidor');
+        }
+
+        setPayment(payload as PaymentResponse);
+      } else {
+        // Pagamento com cartão via Mercado Pago
+        // Processar pagamento (o backend criará o token)
+        const response = await fetch('/api/pagamento/mercadopago', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rifaId: Number(rifaId),
+            numero: Number(selectedNumber),
+            nome,
+            cpf: cpf.replace(/\D/g, ''),
+            whatsapp: whatsapp.replace(/\D/g, ''),
+            card_number: cardNumber.replace(/\s/g, ''),
+            card_name: cardName,
+            card_expiry: cardExpiry,
+            card_cvv: cardCvv,
+            installments,
+          }),
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ error: 'Erro ao processar resposta do servidor' }));
+          throw new Error(payload?.error ?? `Erro ${response.status}: ${response.statusText}`);
+        }
+
+        const payload = await response.json();
+        
+        if (payload.status === 'approved') {
+          setPayment({
+            codigo_visualizacao: payload.codigo_visualizacao,
+            qrcode: null,
+            qrcode_text: null,
+            amount: valorBilhete,
+            expira_em: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          });
+        } else {
+          throw new Error(payload.status_detail || 'Pagamento não aprovado');
+        }
       }
-
-      const payload = await response.json();
-      
-      if (!payload || !payload.codigo_visualizacao) {
-        throw new Error('Resposta inválida do servidor');
-      }
-
-      setPayment(payload as PaymentResponse);
     } catch (submitError) {
       console.error('Erro ao processar pagamento:', submitError);
       setError(submitError instanceof Error ? submitError.message : 'Erro inesperado. Tente novamente.');
@@ -107,7 +194,11 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
             <img
               src={`data:image/png;base64,${payment.qrcode}`}
               alt="QR Code PIX"
-              className="h-56 w-56 rounded-lg border border-slate-200 object-contain"
+              className="h-56 w-56 rounded-lg border border-slate-200 object-contain bg-white p-2"
+              onError={(e) => {
+                console.error('Erro ao carregar QR code');
+                e.currentTarget.style.display = 'none';
+              }}
             />
           ) : (
             <p className="text-sm text-slate-500">QRCode não disponível.</p>
@@ -203,6 +294,34 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         )}
       </div>
 
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <label className="text-sm font-semibold text-slate-700 mb-3 block">Método de pagamento</label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setPaymentMethod('pix')}
+            className={`rounded-lg border-2 px-4 py-3 text-sm font-semibold transition ${
+              paymentMethod === 'pix'
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+            }`}
+          >
+            PIX
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentMethod('card')}
+            className={`rounded-lg border-2 px-4 py-3 text-sm font-semibold transition ${
+              paymentMethod === 'card'
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+            }`}
+          >
+            Cartão
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <label className="flex flex-col gap-2 text-sm text-slate-700">
           Nome completo *
@@ -244,6 +363,91 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         </label>
       </div>
 
+      {paymentMethod === 'card' && (
+        <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h4 className="text-sm font-semibold text-slate-900">Dados do cartão</h4>
+          
+          <label className="flex flex-col gap-2 text-sm text-slate-700">
+            Número do cartão *
+            <input
+              type="text"
+              required
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              value={cardNumber}
+              onChange={(event) => {
+                const value = event.target.value.replace(/\D/g, '').slice(0, 16);
+                setCardNumber(value.replace(/(.{4})/g, '$1 ').trim());
+              }}
+              placeholder="0000 0000 0000 0000"
+              autoComplete="cc-number"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm text-slate-700">
+            Nome no cartão *
+            <input
+              type="text"
+              required
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              value={cardName}
+              onChange={(event) => setCardName(event.target.value.toUpperCase())}
+              placeholder="NOME COMO ESTÁ NO CARTÃO"
+              autoComplete="cc-name"
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-4">
+            <label className="flex flex-col gap-2 text-sm text-slate-700">
+              Validade *
+              <input
+                type="text"
+                required
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                value={cardExpiry}
+                onChange={(event) => {
+                  const value = event.target.value.replace(/\D/g, '').slice(0, 4);
+                  if (value.length >= 2) {
+                    setCardExpiry(`${value.slice(0, 2)}/${value.slice(2)}`);
+                  } else {
+                    setCardExpiry(value);
+                  }
+                }}
+                placeholder="MM/AA"
+                autoComplete="cc-exp"
+              />
+            </label>
+
+            <label className="flex flex-col gap-2 text-sm text-slate-700">
+              CVV *
+              <input
+                type="text"
+                required
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                value={cardCvv}
+                onChange={(event) => setCardCvv(event.target.value.replace(/\D/g, '').slice(0, 4))}
+                placeholder="123"
+                autoComplete="cc-csc"
+              />
+            </label>
+          </div>
+
+          <label className="flex flex-col gap-2 text-sm text-slate-700">
+            Parcelas
+            <select
+              value={installments}
+              onChange={(event) => setInstallments(Number(event.target.value))}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+                <option key={num} value={num}>
+                  {num}x {formatCurrency(valorBilhete / num)} sem juros
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -255,11 +459,19 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         disabled={isSubmitting || !selectedNumber}
         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {isSubmitting ? 'Gerando pagamento...' : `Reservar número #${selectedNumber ?? '—'}`}
+        {isSubmitting 
+          ? (paymentMethod === 'pix' ? 'Gerando pagamento PIX...' : 'Processando pagamento...')
+          : paymentMethod === 'pix'
+          ? `Reservar número #${selectedNumber ?? '—'} com PIX`
+          : `Pagar número #${selectedNumber ?? '—'} com cartão`
+        }
       </button>
 
       <p className="text-xs text-slate-500">
-        Ao reservar você terá até 20 minutos para pagar o PIX. Depois disso o número volta a ficar disponível.
+        {paymentMethod === 'pix' 
+          ? 'Ao reservar você terá até 20 minutos para pagar o PIX. Depois disso o número volta a ficar disponível.'
+          : 'O pagamento será processado imediatamente. Em caso de aprovação, seu bilhete será confirmado automaticamente.'
+        }
       </p>
     </form>
   );

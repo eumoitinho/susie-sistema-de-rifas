@@ -10,7 +10,7 @@ export type Rifa = {
   created_at: string;
   numeros_ocupados?: number[];
   numeros_disponiveis?: number[];
-  fotos?: string[];
+  fotos?: Array<string | { url: string; tipo?: 'foto' | 'video' }>;
 };
 
 export type Bilhete = {

@@ -85,18 +85,45 @@ export default async function RifaDetailsPage({ params }: RifaDetailsPageProps) 
         </div>
       </div>
 
-      {rifaResponse.body.foto_url && (
-        <div className="relative h-64 overflow-hidden rounded-2xl border border-slate-200">
-          <Image
-            src={rifaResponse.body.foto_url}
-            alt={rifaResponse.body.titulo}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 768px"
-            priority
-          />
+      {(rifaResponse.body.fotos && rifaResponse.body.fotos.length > 0) || rifaResponse.body.foto_url ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rifaResponse.body.fotos && rifaResponse.body.fotos.length > 0 ? (
+            rifaResponse.body.fotos.map((item: string | { url: string; tipo?: string }, index: number) => {
+              const fotoUrl = typeof item === 'string' ? item : item.url;
+              const tipo = typeof item === 'string' ? 'foto' : (item.tipo || 'foto');
+              const backendUrl = fotoUrl.startsWith('http') ? fotoUrl : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}${fotoUrl}`;
+              
+              return (
+                <div key={`${fotoUrl}-${index}`} className="relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                  {tipo === 'video' ? (
+                    <video src={backendUrl} controls className="h-full w-full object-cover" />
+                  ) : (
+                    <Image
+                      src={backendUrl}
+                      alt={`${rifaResponse.body.titulo} ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      unoptimized={fotoUrl.startsWith('/uploads')}
+                    />
+                  )}
+                </div>
+              );
+            })
+          ) : rifaResponse.body.foto_url ? (
+            <div className="relative h-64 overflow-hidden rounded-2xl border border-slate-200 sm:col-span-2 lg:col-span-3">
+              <Image
+                src={rifaResponse.body.foto_url}
+                alt={rifaResponse.body.titulo}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 768px"
+                priority
+              />
+            </div>
+          ) : null}
         </div>
-      )}
+      ) : null}
 
       {rifaResponse.body.descricao && (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

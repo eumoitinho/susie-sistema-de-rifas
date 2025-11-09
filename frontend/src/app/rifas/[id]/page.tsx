@@ -38,10 +38,13 @@ export default async function RifaPage({ params }: RifaPageProps) {
     notFound();
   }
 
+  // Normalizar fotos para o formato esperado
   const fotos = body.fotos && body.fotos.length > 0
-    ? body.fotos
+    ? body.fotos.map((f: string | { url: string; tipo?: string }) => 
+        typeof f === 'string' ? { url: f, tipo: 'foto' } : { url: f.url, tipo: f.tipo || 'foto' }
+      )
     : body.foto_url
-      ? [body.foto_url]
+      ? [{ url: body.foto_url, tipo: 'foto' }]
       : [];
 
   const disponiveis = body.numeros_disponiveis ?? [];
@@ -93,20 +96,35 @@ export default async function RifaPage({ params }: RifaPageProps) {
 
             {fotos.length > 0 && (
               <div className="grid gap-4 sm:grid-cols-2">
-                {fotos.map((foto, index) => (
-                  <div 
-                    key={`${foto}-${index}`} 
-                    className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-slate-900 sm:aspect-video"
-                  >
-                    <Image
-                      src={foto}
-                      alt={`${body.titulo} ${index + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, 50vw"
-                    />
-                  </div>
-                ))}
+                {fotos.map((item, index) => {
+                  const fotoUrl = typeof item === 'string' ? item : item.url;
+                  const tipo = typeof item === 'string' ? 'foto' : (item.tipo || 'foto');
+                  const backendUrl = fotoUrl.startsWith('http') ? fotoUrl : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}${fotoUrl}`;
+                  
+                  return (
+                    <div 
+                      key={`${fotoUrl}-${index}`} 
+                      className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-slate-900 sm:aspect-video"
+                    >
+                      {tipo === 'video' ? (
+                        <video
+                          src={backendUrl}
+                          controls
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Image
+                          src={backendUrl}
+                          alt={`${body.titulo} ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, 50vw"
+                          unoptimized={fotoUrl.startsWith('/uploads')}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 

@@ -93,8 +93,8 @@ router.get('/:id', async (req, res) => {
       rifa.numeros_ocupados = bilhetes.map(b => b.numero);
       rifa.numeros_disponiveis = Array.from({ length: rifa.numero_max }, (_, i) => i + 1).filter(num => !rifa.numeros_ocupados.includes(num));
 
-      const fotos = await all('SELECT url FROM fotos WHERE rifa_id = ? ORDER BY ordem, id', [req.params.id]);
-      rifa.fotos = fotos.map(f => f.url);
+      const fotos = await all('SELECT url, tipo FROM fotos WHERE rifa_id = ? ORDER BY ordem, id', [req.params.id]);
+      rifa.fotos = fotos.map(f => ({ url: f.url, tipo: f.tipo || 'foto' }));
 
       res.json(rifa);
     } else {
@@ -106,8 +106,8 @@ router.get('/:id', async (req, res) => {
       rifa.numeros_ocupados = bilhetes.map(b => b.numero);
       rifa.numeros_disponiveis = Array.from({ length: rifa.numero_max }, (_, i) => i + 1).filter(num => !rifa.numeros_ocupados.includes(num));
 
-      const fotos = await all('SELECT url FROM fotos WHERE rifa_id = ? ORDER BY ordem, id', [req.params.id]);
-      rifa.fotos = fotos.map(f => f.url);
+      const fotos = await all('SELECT url, tipo FROM fotos WHERE rifa_id = ? ORDER BY ordem, id', [req.params.id]);
+      rifa.fotos = fotos.map(f => ({ url: f.url, tipo: f.tipo || 'foto' }));
 
       res.json(rifa);
     }

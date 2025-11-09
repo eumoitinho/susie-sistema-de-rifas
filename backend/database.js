@@ -98,10 +98,16 @@ async function initDatabase() {
       rifa_id INTEGER NOT NULL,
       url TEXT NOT NULL,
       ordem INTEGER DEFAULT 0,
+      tipo TEXT DEFAULT 'foto',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (rifa_id) REFERENCES rifas(id) ON DELETE CASCADE
     )
   `);
+
+  // Adicionar coluna tipo se não existir
+  try {
+    await run(`ALTER TABLE fotos ADD COLUMN tipo TEXT DEFAULT 'foto'`);
+  } catch (err) {}
 
   console.log('Database initialized successfully');
 }

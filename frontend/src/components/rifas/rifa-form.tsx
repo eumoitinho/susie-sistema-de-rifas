@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch, ApiError } from '@/lib/http';
 import { Rifa } from '@/types/rifa';
+import { MediaUpload } from './media-upload';
 
 type BaseRifaPayload = {
   titulo: string;
@@ -84,11 +85,15 @@ export function RifaForm({ mode, rifaId, initialData }: RifaFormProps) {
     try {
       setIsSubmitting(true);
 
+      let createdRifaId = rifaId;
+      
       if (mode === 'create') {
-        await apiFetch('/api/rifas', {
+        const response = await apiFetch<{ rifa: { id: number }; message: string }>('/api/rifas', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
+        // O backend retorna { message, rifa: { id, ... } }
+        createdRifaId = response.rifa.id;
       } else if (mode === 'edit' && rifaId) {
         await apiFetch(`/api/rifas/${rifaId}`, {
           method: 'PUT',
@@ -96,7 +101,12 @@ export function RifaForm({ mode, rifaId, initialData }: RifaFormProps) {
         });
       }
 
-      router.replace('/dashboard');
+      // Se criou uma nova rifa, redirecionar para edição para permitir upload
+      if (mode === 'create' && createdRifaId) {
+        router.replace(`/dashboard/editar/${createdRifaId}`);
+      } else {
+        router.replace('/dashboard');
+      }
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -188,19 +198,17 @@ export function RifaForm({ mode, rifaId, initialData }: RifaFormProps) {
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor="foto_url" className="text-sm font-semibold text-slate-700">
-            Imagem de destaque (URL)
-          </label>
-          <input
-            id="foto_url"
-            value={values.foto_url}
-            onChange={handleChange('foto_url')}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
-            placeholder="https://imagem.jpg"
-          />
-        </div>
       </div>
+
+      {mode === 'edit' && rifaId && (
+        <MediaUpload rifaId={rifaId} onUploadComplete={() => router.refresh()} />
+      )}
+      
+      {mode === 'create' && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          <p>💡 <strong>Dica:</strong> Após criar a rifa, você poderá adicionar até 10 fotos e 2 vídeos na página de edição.</p>
+        </div>
+      )}
 
       {error && (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
