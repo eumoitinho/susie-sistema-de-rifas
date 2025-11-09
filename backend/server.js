@@ -9,13 +9,16 @@ import pagamentoRoutes from './routes/pagamento.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+   // backend/server.js (temporário)
+   import { JWT_SECRET } from './middleware/auth.js';
+   console.log('JWT_SECRET backend:', JWT_SECRET);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3005;
-const HOST = process.env.HOST || '0.0.0.0';
+const PORT = '3005';
+const HOST = 'localhost';
 
 // Create necessary directories
 const uploadsDir = path.join(__dirname, 'uploads');
