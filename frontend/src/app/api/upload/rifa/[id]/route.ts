@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthToken } from '@/lib/server/auth';
 
-const BACKEND_BASE_URL = process.env.BACKEND_API_URL ?? 'http://localhost:4000';
+const BACKEND_BASE_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080';
 const BACKEND_API_PREFIX = process.env.BACKEND_API_PREFIX ?? '/api';
 
 export async function POST(

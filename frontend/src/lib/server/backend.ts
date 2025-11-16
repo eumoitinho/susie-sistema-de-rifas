@@ -1,6 +1,6 @@
 import { withAuthHeader } from './auth';
 
-const BACKEND_BASE_URL = process.env.BACKEND_API_URL ?? 'http://localhost:4000';
+const BACKEND_BASE_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080';
 const BACKEND_API_PREFIX = process.env.BACKEND_API_PREFIX ?? '/api';
 
 export const BACKEND_API_URL = `${BACKEND_BASE_URL.replace(/\/$/, '')}${BACKEND_API_PREFIX}`;

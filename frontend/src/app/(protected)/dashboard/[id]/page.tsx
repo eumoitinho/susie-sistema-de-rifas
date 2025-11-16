@@ -91,7 +91,7 @@ export default async function RifaDetailsPage({ params }: RifaDetailsPageProps) 
             rifaResponse.body.fotos.map((item: string | { url: string; tipo?: string }, index: number) => {
               const fotoUrl = typeof item === 'string' ? item : item.url;
               const tipo = typeof item === 'string' ? 'foto' : (item.tipo || 'foto');
-              const backendUrl = fotoUrl.startsWith('http') ? fotoUrl : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}${fotoUrl}`;
+              const backendUrl = fotoUrl.startsWith('http') ? fotoUrl : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'}${fotoUrl}`;
               
               return (
                 <div key={`${fotoUrl}-${index}`} className="relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
@@ -100,7 +100,7 @@ export default async function RifaDetailsPage({ params }: RifaDetailsPageProps) 
                   ) : (
                     <Image
                       src={backendUrl}
-                      alt={`${rifaResponse.body.titulo} ${index + 1}`}
+                      alt={`${rifaResponse.body!.titulo} ${index + 1}`}
                       fill
                       className="object-cover"
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -114,7 +114,7 @@ export default async function RifaDetailsPage({ params }: RifaDetailsPageProps) 
             <div className="relative h-64 overflow-hidden rounded-2xl border border-slate-200 sm:col-span-2 lg:col-span-3">
               <Image
                 src={rifaResponse.body.foto_url}
-                alt={rifaResponse.body.titulo}
+                alt={rifaResponse.body!.titulo}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 768px"
