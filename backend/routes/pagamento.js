@@ -173,22 +173,42 @@ router.post('/pix', async (req, res) => {
 router.post('/webhook', async (req, res) => {
   try {
     const signature = req.headers['x-abacate-signature'];
-    
+
     if (!signature || signature !== ABACATEPAY_WEBHOOK_SECRET) {
       console.log('Webhook signature invalid');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { billingId, status } = req.body;
-    console.log('Webhook received:', { billingId, status });
+    // Normalizar payload para lidar com possíveis formatos
+    const { status } = req.body || {};
+    const pixId = req.body?.pixId || req.body?.id || req.body?.billingId || req.body?.data?.id;
+    const externalId = req.body?.metadata?.externalId || req.body?.data?.metadata?.externalId;
+
+    console.log('Webhook received:', { status, pixId, externalId, raw: req.body });
+
+    if (!status) {
+      return res.status(200).json({ message: 'Ignored: missing status' });
+    }
 
     if (status === 'PAID') {
-      const result = await run('UPDATE bilhetes SET status_pagamento = ? WHERE pix_id = ?', ['PAID', billingId]);
-      console.log('Bilhete atualizado:', result);
-      res.json({ message: 'Pagamento confirmado' });
-    } else {
-      res.json({ message: 'Status atualizado' });
+      let updated = 0;
+      if (pixId) {
+        const result = await run('UPDATE bilhetes SET status_pagamento = ? WHERE pix_id = ?', ['PAID', pixId]);
+        updated = result?.changes || 0;
+        console.log('Update by pix_id result:', result);
+      }
+
+      // Fallback: tentar atualizar por codigo_visualizacao a partir do externalId (se enviado)
+      if (!updated && externalId) {
+        const result2 = await run('UPDATE bilhetes SET status_pagamento = ? WHERE codigo_visualizacao = ?', ['PAID', externalId]);
+        updated = result2?.changes || 0;
+        console.log('Update by codigo_visualizacao result:', result2);
+      }
+
+      return res.json({ message: updated ? 'Pagamento confirmado' : 'Pagamento confirmado (sem correspondência local)' });
     }
+
+    return res.json({ message: 'Status recebido' });
   } catch (error) {
     console.error('Webhook error:', error);
     res.status(500).json({ error: 'Erro ao processar webhook' });

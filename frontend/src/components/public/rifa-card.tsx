@@ -10,18 +10,23 @@ type RifaCardProps = {
 export function RifaCard({ rifa }: RifaCardProps) {
   const disponibilidade = Math.max(rifa.cotas_disponiveis, 0);
   const progresso = rifa.numero_max > 0 ? Math.round((rifa.cotas_vendidas / rifa.numero_max) * 100) : 0;
+  const rawFoto = rifa.foto_capa || '';
+  const fotoSrc = rawFoto && !rawFoto.startsWith('http')
+    ? `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'}${rawFoto}`
+    : rawFoto;
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-950/70 shadow-sm ring-1 ring-white/5 transition hover:-translate-y-1 hover:shadow-lg hover:ring-orange-500/40">
       <div className="relative h-48 w-full overflow-hidden bg-slate-900">
         {rifa.foto_capa ? (
           <Image
-            src={rifa.foto_capa}
+            src={fotoSrc}
             alt={rifa.titulo}
             fill
             className="object-cover transition duration-500 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             priority={false}
+            unoptimized={rawFoto.startsWith('/uploads')}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-slate-500">
