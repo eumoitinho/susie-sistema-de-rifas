@@ -99,7 +99,8 @@ export default async function RifaPage({ params }: RifaPageProps) {
                 {fotos.map((item, index) => {
                   const fotoUrl = typeof item === 'string' ? item : item.url;
                   const tipo = typeof item === 'string' ? 'foto' : (item.tipo || 'foto');
-                  const backendUrl = fotoUrl.startsWith('http') ? fotoUrl : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'}${fotoUrl}`;
+                  const baseForUploads = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_API_URL || 'http://localhost:8080').replace(/\/$/, '');
+                  const backendUrl = fotoUrl.startsWith('http') ? fotoUrl : `${baseForUploads}${fotoUrl}`;
                   
                   return (
                     <div 

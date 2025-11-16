@@ -11,8 +11,9 @@ export function RifaCard({ rifa }: RifaCardProps) {
   const disponibilidade = Math.max(rifa.cotas_disponiveis, 0);
   const progresso = rifa.numero_max > 0 ? Math.round((rifa.cotas_vendidas / rifa.numero_max) * 100) : 0;
   const rawFoto = rifa.foto_capa || '';
+  const baseForUploads = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_API_URL || 'http://localhost:8080').replace(/\/$/, '');
   const fotoSrc = rawFoto && !rawFoto.startsWith('http')
-    ? `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'}${rawFoto}`
+    ? `${baseForUploads}${rawFoto}`
     : rawFoto;
 
   return (

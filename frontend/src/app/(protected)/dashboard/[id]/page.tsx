@@ -91,7 +91,8 @@ export default async function RifaDetailsPage({ params }: RifaDetailsPageProps) 
             rifaResponse.body.fotos.map((item: string | { url: string; tipo?: string }, index: number) => {
               const fotoUrl = typeof item === 'string' ? item : item.url;
               const tipo = typeof item === 'string' ? 'foto' : (item.tipo || 'foto');
-              const backendUrl = fotoUrl.startsWith('http') ? fotoUrl : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'}${fotoUrl}`;
+              const baseForUploads = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_API_URL || 'http://localhost:8080').replace(/\/$/, '');
+              const backendUrl = fotoUrl.startsWith('http') ? fotoUrl : `${baseForUploads}${fotoUrl}`;
               
               return (
                 <div key={`${fotoUrl}-${index}`} className="relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
