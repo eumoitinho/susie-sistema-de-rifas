@@ -18,5 +18,6 @@ body {
   min-height: 100vh;
   font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont,
     'Segoe UI', sans-serif;
-  background-color: #0f172a;
+  /* Fundo escuro neutro para destacar elementos em laranja */
+  background-color: #020617;
 }

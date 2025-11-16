@@ -10,11 +10,15 @@ type RequestPayload = {
   token?: string;
   installments?: number;
   payment_method_id?: string;
+  card_number?: string;
+  card_name?: string;
+  card_expiry?: string;
+  card_cvv?: string;
 };
 
 export async function POST(request: NextRequest) {
   try {
-    const payload = (await request.json()) as Partial<RequestPayload>;
+  const payload: Partial<RequestPayload> = await request.json();
     const { rifaId, numero, nome, cpf, whatsapp, token, installments, payment_method_id } = payload;
 
     // Validar e converter tipos
@@ -40,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Se tiver dados do cartão, criar token e processar pagamento
-    const { card_number, card_name, card_expiry, card_cvv } = payload as any;
+  const { card_number, card_name, card_expiry, card_cvv } = payload;
     
     if (card_number && card_name && card_expiry && card_cvv) {
       // Criar token do cartão no backend
@@ -65,7 +69,9 @@ export async function POST(request: NextRequest) {
         auth: false,
       });
 
-      if (!tokenResponse.ok || !tokenResponse.body?.id) {
+      const tokenBody = tokenResponse.body as { id?: string; payment_method_id?: string } | null;
+
+      if (!tokenResponse.ok || !tokenBody?.id) {
         return NextResponse.json(
           tokenResponse.body ?? { error: 'Erro ao processar dados do cartão' },
           { status: tokenResponse.status }
@@ -79,14 +85,14 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          token: tokenResponse.body.id,
+          token: tokenBody.id,
           rifa_id: rifaIdNum,
           numero: numeroNum,
           nome_comprador: nome.trim(),
           cpf: cpfLimpo,
           whatsapp: whatsappLimpo,
           installments: installments || 1,
-          payment_method_id: tokenResponse.body.payment_method_id || 'visa',
+          payment_method_id: tokenBody.payment_method_id || 'visa',
         }),
         auth: false,
       });

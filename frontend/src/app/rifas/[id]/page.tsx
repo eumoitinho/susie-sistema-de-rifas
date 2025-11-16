@@ -53,11 +53,11 @@ export default async function RifaPage({ params }: RifaPageProps) {
   const shareLink = `${appBaseUrl}/rifas/${id}`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-orange-950/40 to-slate-900 text-slate-50">
       <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <Link 
           href="/rifas" 
-          className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-emerald-300"
+          className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-orange-300"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -79,9 +79,9 @@ export default async function RifaPage({ params }: RifaPageProps) {
                     {formatDate(body.data_sorteio)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-400">Valor por cota</p>
-                  <p className="mt-2 text-lg font-bold text-emerald-400 sm:text-xl">
+                <div className="rounded-xl border border-orange-500/40 bg-orange-500/10 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-orange-300">Valor por cota</p>
+                  <p className="mt-2 text-lg font-bold text-orange-400 sm:text-xl">
                     {formatCurrency(body.valor_bilhete)}
                   </p>
                 </div>
@@ -137,7 +137,7 @@ export default async function RifaPage({ params }: RifaPageProps) {
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Cotas vendidas</p>
-                  <p className="mt-1 text-base font-bold text-emerald-400">{vendidos}</p>
+                  <p className="mt-1 text-base font-bold text-orange-400">{vendidos}</p>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Criado em</p>
@@ -145,7 +145,7 @@ export default async function RifaPage({ params }: RifaPageProps) {
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Compartilhar</p>
-                  <p className="mt-1 break-all text-xs text-emerald-300 sm:text-sm">{shareLink}</p>
+                  <p className="mt-1 break-all text-xs text-orange-300 sm:text-sm">{shareLink}</p>
                 </div>
               </div>
             </div>
@@ -163,19 +163,19 @@ export default async function RifaPage({ params }: RifaPageProps) {
               <h3 className="text-base font-semibold text-white sm:text-lg">Como funciona o pagamento?</h3>
               <ol className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
                 <li className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">1</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-xs font-bold text-orange-300">1</span>
                   <span>Selecione um número disponível e preencha com seus dados.</span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">2</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-xs font-bold text-orange-300">2</span>
                   <span>Geramos um QR Code PIX único no valor da cota.</span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">3</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-xs font-bold text-orange-300">3</span>
                   <span>Após o pagamento, o status do seu bilhete atualiza automaticamente.</span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">4</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-xs font-bold text-orange-300">4</span>
                   <span>Guarde o código de visualização para consultar o comprovante quando quiser.</span>
                 </li>
               </ol>

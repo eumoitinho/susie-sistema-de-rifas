@@ -33,12 +33,12 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col gap-8">
       <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+        <div className="rounded-2xl border border-orange-100 bg-orange-50/80 p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
             Sorteios ativos
           </p>
-          <p className="mt-2 text-3xl font-bold text-emerald-800">{totalRifas}</p>
-          <p className="mt-1 text-sm text-emerald-700/80">
+          <p className="mt-2 text-3xl font-bold text-orange-800">{totalRifas}</p>
+          <p className="mt-1 text-sm text-orange-700/80">
             Gerencie seus sorteios de forma centralizada.
           </p>
         </div>
@@ -71,14 +71,14 @@ export default async function DashboardPage() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">Lista de sorteios</h3>
+            <h3 className="text-lg font-semibold text-slate-50">Lista de sorteios</h3>
             <p className="text-sm text-slate-500">
               Visualize, edite ou crie novos sorteios rapidamente.
             </p>
           </div>
           <Link
             href="/dashboard/novo"
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-emerald-950 shadow transition hover:bg-emerald-400"
+            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow transition hover:bg-orange-400"
           >
             Criar sorteio
           </Link>
