@@ -16,6 +16,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
+app.set('trust proxy', 1);
 
 // Create necessary directories
 const uploadsDir = path.join(__dirname, 'uploads');

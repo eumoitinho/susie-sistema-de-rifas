@@ -4,8 +4,18 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
+function toAbsolute(req, url) {
+  if (!url) return url;
+  if (typeof url !== 'string') return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http');
+  const host = req.get('host');
+  const base = process.env.BACKEND_PUBLIC_URL || `${proto}://${host}`;
+  return `${base}${url}`;
+}
+
 // Rotas públicas
-router.get('/public/list', async (_req, res) => {
+router.get('/public/list', async (req, res) => {
   try {
     const rifas = await all(`
       SELECT
@@ -27,14 +37,14 @@ router.get('/public/list', async (_req, res) => {
       }
     });
 
-    const response = rifas.map((rifa) => {
+  const response = rifas.map((rifa) => {
       const vendidos = Number(rifa.cotas_vendidas || 0);
       const total = Number(rifa.numero_max || 0);
       return {
         id: rifa.id,
         titulo: rifa.titulo,
         descricao: rifa.descricao,
-        foto_capa: fotoMap.get(rifa.id) || rifa.foto_url || null,
+        foto_capa: toAbsolute(req, fotoMap.get(rifa.id) || rifa.foto_url || null),
         valor_bilhete: rifa.valor_bilhete,
         data_sorteio: rifa.data_sorteio,
         numero_max: total,
@@ -94,7 +104,10 @@ router.get('/:id', async (req, res) => {
       rifa.numeros_disponiveis = Array.from({ length: rifa.numero_max }, (_, i) => i + 1).filter(num => !rifa.numeros_ocupados.includes(num));
 
       const fotos = await all('SELECT url, tipo FROM fotos WHERE rifa_id = ? ORDER BY ordem, id', [req.params.id]);
-      rifa.fotos = fotos.map(f => ({ url: f.url, tipo: f.tipo || 'foto' }));
+      rifa.fotos = fotos.map(f => ({ url: toAbsolute(req, f.url), tipo: f.tipo || 'foto' }));
+      if (rifa.foto_url) {
+        rifa.foto_url = toAbsolute(req, rifa.foto_url);
+      }
 
       res.json(rifa);
     } else {
@@ -107,7 +120,10 @@ router.get('/:id', async (req, res) => {
       rifa.numeros_disponiveis = Array.from({ length: rifa.numero_max }, (_, i) => i + 1).filter(num => !rifa.numeros_ocupados.includes(num));
 
       const fotos = await all('SELECT url, tipo FROM fotos WHERE rifa_id = ? ORDER BY ordem, id', [req.params.id]);
-      rifa.fotos = fotos.map(f => ({ url: f.url, tipo: f.tipo || 'foto' }));
+      rifa.fotos = fotos.map(f => ({ url: toAbsolute(req, f.url), tipo: f.tipo || 'foto' }));
+      if (rifa.foto_url) {
+        rifa.foto_url = toAbsolute(req, rifa.foto_url);
+      }
 
       res.json(rifa);
     }
