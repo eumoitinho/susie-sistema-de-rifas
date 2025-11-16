@@ -33,12 +33,10 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
-  // Cartão desabilitado neste momento
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payment, setPayment] = useState<PaymentResponse | null>(null);
   const [qrSrc, setQrSrc] = useState<string | null>(null);
-  // Mercado Pago desabilitado enquanto só houver PIX
 
   const sortedNumbers = useMemo(() => {
     return [...numerosDisponiveis].sort((a, b) => a - b);
@@ -58,8 +56,6 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
     setQrSrc(null);
   };
 
-  // Cartão / Mercado Pago desabilitados por enquanto, só PIX
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedNumber) {
@@ -75,7 +71,7 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
     setError(null);
 
     try {
-  if (paymentMethod === 'pix') {
+      if (paymentMethod === 'pix') {
         const response = await fetch('/api/pagamento/pix', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -94,15 +90,14 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         }
 
         const payload = await response.json();
-        
         if (!payload || !payload.codigo_visualizacao) {
           throw new Error('Resposta inválida do servidor');
         }
 
         setPayment(payload as PaymentResponse);
-        // Se o backend já enviar a imagem em base64, usamos direto
         if (payload.qrcode) {
-          setQrSrc(`data:image/png;base64,${payload.qrcode}`);
+          const img: string = String(payload.qrcode);
+          setQrSrc(img.startsWith('data:image') ? img : `data:image/png;base64,${img}`);
         } else {
           setQrSrc(null);
         }
@@ -115,15 +110,12 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
     }
   };
 
-  // Se não vier imagem do backend, geramos localmente a partir do qrcode_text
   useEffect(() => {
     let cancelled = false;
     async function maybeGenerate() {
       if (!payment) return;
-      // Se já temos qrSrc (base64 do backend), não faz nada
       if (payment.qrcode) return;
       if (!payment.qrcode_text) return;
-
       try {
         const QRCode = await import('qrcode');
         const dataUrl = await QRCode.toDataURL(payment.qrcode_text, {
@@ -145,38 +137,42 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
 
   if (payment) {
     return (
-      <div className="rounded-2xl border border-orange-200 bg-orange-50 p-6 shadow-inner">
-        <h3 className="text-lg font-semibold text-orange-900">Pagamento gerado com sucesso!</h3>
-        <p className="mt-2 text-sm text-orange-800">
+      <div className="rounded-2xl border border-slate-800/60 bg-slate-950/80 p-6 shadow ring-1 ring-white/5">
+        <h3 className="text-lg font-semibold text-orange-400">Pagamento gerado com sucesso!</h3>
+        <p className="mt-2 text-sm text-slate-300">
           Escaneie o QR Code abaixo para finalizar a compra do número <strong>{selectedNumber}</strong> da rifa{' '}
           <strong>{titulo}</strong>.
         </p>
 
-        <div className="mt-6 flex flex-col items-center gap-4 rounded-xl bg-white p-6 shadow">
+        <div className="mt-6 flex flex-col items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-6 shadow">
           {qrSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={qrSrc}
               alt="QR Code PIX"
-              className="h-56 w-56 rounded-lg border border-slate-200 object-contain bg-white p-2"
+              className="h-56 w-56 rounded-lg border border-slate-700 object-contain bg-white p-2"
               onError={(e) => {
                 console.error('Erro ao carregar QR code');
                 e.currentTarget.style.display = 'none';
               }}
             />
           ) : (
-            <p className="text-sm text-slate-500">QRCode não disponível.</p>
+            <p className="text-sm text-slate-400">QRCode não disponível.</p>
           )}
-          <div className="text-center text-sm text-slate-600">
-            <p>Valor: <strong>{formatCurrency(payment.amount)}</strong></p>
-            <p>Expira em: {formatDateTime(payment.expira_em)}</p>
+          <div className="text-center text-sm text-slate-400">
+            <p>
+              Valor: <strong className="text-slate-50">{formatCurrency(payment.amount)}</strong>
+            </p>
+            <p>
+              Expira em: <span className="text-slate-300">{formatDateTime(payment.expira_em)}</span>
+            </p>
           </div>
         </div>
 
-        <div className="mt-4 rounded-xl bg-white p-4 shadow-inner">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Copia e cola</p>
+        <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-inner">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Copia e cola</p>
           <textarea
-            className="mt-2 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600"
+            className="mt-2 w-full resize-none rounded-lg border border-slate-700 bg-slate-950 p-3 font-mono text-xs text-slate-200"
             rows={4}
             readOnly
             value={payment.qrcode_text ?? ''}
@@ -184,7 +180,7 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
           />
           <button
             type="button"
-            className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+            className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-slate-600 hover:bg-slate-800"
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(payment.qrcode_text ?? '');
@@ -197,21 +193,23 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
           </button>
         </div>
 
-  <div className="mt-6 flex flex-col gap-3 rounded-xl border border-orange-200 bg-white px-4 py-5 text-sm text-slate-600">
+        <div className="mt-6 flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-5 text-sm text-slate-300">
           <p>
             Após o pagamento, acompanhe o status do seu bilhete em:
             <br />
             <Link
               href={`/bilhetes/${payment.codigo_visualizacao}`}
-              className="font-semibold text-orange-600 hover:underline"
+              className="font-semibold text-orange-400 hover:underline"
             >
               /bilhetes/{payment.codigo_visualizacao}
             </Link>
           </p>
-          <p>Guarde o código de visualização: <code>{payment.codigo_visualizacao}</code></p>
+          <p>
+            Guarde o código de visualização: <code className="text-slate-200">{payment.codigo_visualizacao}</code>
+          </p>
           <button
             type="button"
-            className="self-start rounded-lg border border-orange-300 px-4 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-50"
+            className="self-start rounded-lg border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-100 transition hover:bg-slate-800"
             onClick={resetState}
           >
             Escolher outro número
@@ -230,11 +228,9 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         </p>
       </div>
 
-  <div className="max-h-72 overflow-auto rounded-xl border border-slate-800 bg-slate-900 p-4">
+      <div className="max-h-72 overflow-auto rounded-xl border border-slate-800 bg-slate-900 p-4">
         {sortedNumbers.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">
-            Nenhum número disponível no momento.
-          </p>
+          <p className="py-8 text-center text-sm text-slate-500">Nenhum número disponível no momento.</p>
         ) : (
           <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
             {sortedNumbers.map((numero) => {
@@ -258,16 +254,13 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         )}
       </div>
 
-      {/* Método de pagamento fixo em PIX */}
       <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
         <p className="text-sm font-semibold text-slate-200">Pagamento via PIX</p>
-        <p className="mt-1 text-xs text-slate-400">
-          Geramos um QR Code PIX automático para você pagar com segurança.
-        </p>
+        <p className="mt-1 text-xs text-slate-400">Geramos um QR Code PIX automático para você pagar com segurança.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-  <label className="flex flex-col gap-2 text-sm text-slate-200">
+        <label className="flex flex-col gap-2 text-sm text-slate-200">
           Nome completo *
           <input
             type="text"
@@ -280,7 +273,7 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
           />
         </label>
 
-  <label className="flex flex-col gap-2 text-sm text-slate-200">
+        <label className="flex flex-col gap-2 text-sm text-slate-200">
           CPF *
           <input
             type="text"
@@ -293,7 +286,7 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
           />
         </label>
 
-  <label className="flex flex-col gap-2 text-sm text-slate-200 md:col-span-2">
+        <label className="flex flex-col gap-2 text-sm text-slate-200 md:col-span-2">
           WhatsApp *
           <input
             type="tel"
@@ -307,12 +300,8 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         </label>
       </div>
 
-      {/* Bloco de cartão removido enquanto só PIX estiver habilitado */}
-
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
       <button
@@ -320,9 +309,7 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         disabled={isSubmitting || !selectedNumber}
         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {isSubmitting 
-          ? 'Gerando pagamento PIX...'
-          : `Reservar número #${selectedNumber ?? '—'} com PIX`}
+        {isSubmitting ? 'Gerando pagamento PIX...' : `Reservar número #${selectedNumber ?? '—'} com PIX`}
       </button>
 
       <p className="text-xs text-slate-400">
