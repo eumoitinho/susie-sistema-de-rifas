@@ -130,7 +130,7 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
           margin: 1,
           width: 256,
           errorCorrectionLevel: 'M',
-        } as any);
+        } as Parameters<typeof QRCode.toDataURL>[1]);
         if (!cancelled) setQrSrc(dataUrl);
       } catch (e) {
         console.error('Falha ao gerar QR localmente:', e);
