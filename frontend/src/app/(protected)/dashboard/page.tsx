@@ -1,4 +1,6 @@
 import Link from 'next/link';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { backendFetch } from '@/lib/server/backend';
 import { Rifa } from '@/types/rifa';
 import { RifaList } from '@/components/rifas/rifa-list';
