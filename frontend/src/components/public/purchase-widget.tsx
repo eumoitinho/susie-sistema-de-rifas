@@ -37,6 +37,7 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payment, setPayment] = useState<PaymentResponse | null>(null);
+  const [qrSrc, setQrSrc] = useState<string | null>(null);
   // Mercado Pago desabilitado enquanto só houver PIX
 
   const sortedNumbers = useMemo(() => {
@@ -54,6 +55,7 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
     setWhatsapp('');
     setError(null);
     setPayment(null);
+    setQrSrc(null);
   };
 
   // Cartão / Mercado Pago desabilitados por enquanto, só PIX
@@ -98,6 +100,12 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         }
 
         setPayment(payload as PaymentResponse);
+        // Se o backend já enviar a imagem em base64, usamos direto
+        if (payload.qrcode) {
+          setQrSrc(`data:image/png;base64,${payload.qrcode}`);
+        } else {
+          setQrSrc(null);
+        }
       }
     } catch (submitError) {
       console.error('Erro ao processar pagamento:', submitError);
@@ -106,6 +114,34 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
       setIsSubmitting(false);
     }
   };
+
+  // Se não vier imagem do backend, geramos localmente a partir do qrcode_text
+  useEffect(() => {
+    let cancelled = false;
+    async function maybeGenerate() {
+      if (!payment) return;
+      // Se já temos qrSrc (base64 do backend), não faz nada
+      if (payment.qrcode) return;
+      if (!payment.qrcode_text) return;
+
+      try {
+        const QRCode = await import('qrcode');
+        const dataUrl = await QRCode.toDataURL(payment.qrcode_text, {
+          margin: 1,
+          width: 256,
+          errorCorrectionLevel: 'M',
+        } as any);
+        if (!cancelled) setQrSrc(dataUrl);
+      } catch (e) {
+        console.error('Falha ao gerar QR localmente:', e);
+        if (!cancelled) setQrSrc(null);
+      }
+    }
+    maybeGenerate();
+    return () => {
+      cancelled = true;
+    };
+  }, [payment]);
 
   if (payment) {
     return (
@@ -117,10 +153,10 @@ export function PurchaseWidget({ rifaId, titulo, valorBilhete, numerosDisponivei
         </p>
 
         <div className="mt-6 flex flex-col items-center gap-4 rounded-xl bg-white p-6 shadow">
-          {payment.qrcode ? (
+          {qrSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`data:image/png;base64,${payment.qrcode}`}
+              src={qrSrc}
               alt="QR Code PIX"
               className="h-56 w-56 rounded-lg border border-slate-200 object-contain bg-white p-2"
               onError={(e) => {
